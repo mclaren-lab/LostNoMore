@@ -1,4 +1,4 @@
-// Validate user name
+// Validation functions
 function validateName(name, errorId) {
   const error = document.getElementById(errorId);
   if (name.length < 2 || name.length > 50) {
@@ -9,29 +9,147 @@ function validateName(name, errorId) {
   return true;
 }
 
-// Remove all error messages
+function validateEmail(email, errorId) {
+  const error = document.getElementById(errorId);
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    error.classList.add("show");
+    return false;
+  }
+  error.classList.remove("show");
+  return true;
+}
+
+function validatePassword(password, errorId) {
+  const error = document.getElementById(errorId);
+  if (password.length < 6) {
+    error.classList.add("show");
+    return false;
+  }
+  error.classList.remove("show");
+  return true;
+}
+
+function validatePhone(phone, errorId) {
+  const error = document.getElementById(errorId);
+  const phoneRegex = /^[\d\s\-\+\(\)]+$/;
+  if (!phoneRegex.test(phone) || phone.length < 10) {
+    error.classList.add("show");
+    return false;
+  }
+  error.classList.remove("show");
+  return true;
+}
+
 function clearErrors() {
   document.querySelectorAll(".error-message").forEach(error => {
     error.classList.remove("show");
   });
 }
 
-// Search through reports with text and filters
+// Search functionality
 function searchReports(query) {
   const reports = JSON.parse(localStorage.getItem('reports') || '[]');
-  const filtered = reports.filter(report => {
+  const categoryFilter = document.getElementById('categoryFilter').value;
+  const typeFilter = document.getElementById('typeFilter').value;
+  const siteFilter = document.getElementById('siteFilter').value;
+  const itemFilter = document.getElementById('itemFilter').value;
+  const rewardFilter = document.getElementById('rewardFilter').value;
+  
+  let filtered = reports.filter(report => {
+    // Text search
     const searchText = query.toLowerCase();
-    return report.name.toLowerCase().includes(searchText) ||
-           report.email.toLowerCase().includes(searchText) ||
-           report.description.toLowerCase().includes(searchText) ||
-           report.items.toLowerCase().includes(searchText) ||
-           report.site.toLowerCase().includes(searchText) ||
-           report.location.toLowerCase().includes(searchText);
+    const textMatch = !query || 
+      report.name.toLowerCase().includes(searchText) ||
+      report.email.toLowerCase().includes(searchText) ||
+      report.description.toLowerCase().includes(searchText) ||
+      report.items.toLowerCase().includes(searchText) ||
+      (report.site && report.site.toLowerCase().includes(searchText)) ||
+      (report.location && report.location.toLowerCase().includes(searchText));
+    
+    // Category filters
+    let categoryMatch = true;
+    
+    if (categoryFilter === 'type') {
+      if (typeFilter) {
+        categoryMatch = report.type.toLowerCase() === typeFilter;
+      }
+    } else if (categoryFilter === 'site') {
+      if (siteFilter) {
+        categoryMatch = report.site === siteFilter;
+      }
+    } else if (categoryFilter === 'item') {
+      if (itemFilter) {
+        // Check if the item filter matches any of the items in the report
+        const reportItems = report.items.split(',').map(item => item.trim());
+        categoryMatch = reportItems.includes(itemFilter);
+      }
+    } else if (categoryFilter === 'reward') {
+      if (rewardFilter === 'yes') {
+        categoryMatch = report.reward && report.reward.trim() !== '';
+      } else if (rewardFilter === 'no') {
+        categoryMatch = !report.reward || report.reward.trim() === '';
+      }
+    }
+    
+    return textMatch && categoryMatch;
   });
+  
   displayReports(filtered);
 }
 
-// Display reports to users
+// Admin search functionality
+function adminSearchReports(query) {
+  const reports = JSON.parse(localStorage.getItem('reports') || '[]');
+  const categoryFilter = document.getElementById('adminCategoryFilter').value;
+  const typeFilter = document.getElementById('adminTypeFilter').value;
+  const siteFilter = document.getElementById('adminSiteFilter').value;
+  const itemFilter = document.getElementById('adminItemFilter').value;
+  const rewardFilter = document.getElementById('adminRewardFilter').value;
+  
+  let filtered = reports.filter(report => {
+    // Text search
+    const searchText = query.toLowerCase();
+    const textMatch = !query || 
+      report.name.toLowerCase().includes(searchText) ||
+      report.email.toLowerCase().includes(searchText) ||
+      report.description.toLowerCase().includes(searchText) ||
+      report.items.toLowerCase().includes(searchText) ||
+      (report.site && report.site.toLowerCase().includes(searchText)) ||
+      (report.location && report.location.toLowerCase().includes(searchText));
+    
+    // Category filters
+    let categoryMatch = true;
+    
+    if (categoryFilter === 'type') {
+      if (typeFilter) {
+        categoryMatch = report.type.toLowerCase() === typeFilter;
+      }
+    } else if (categoryFilter === 'site') {
+      if (siteFilter) {
+        categoryMatch = report.site === siteFilter;
+      }
+    } else if (categoryFilter === 'item') {
+      if (itemFilter) {
+        // Check if the item filter matches any of the items in the report
+        const reportItems = report.items.split(',').map(item => item.trim());
+        categoryMatch = reportItems.includes(itemFilter);
+      }
+    } else if (categoryFilter === 'reward') {
+      if (rewardFilter === 'yes') {
+        categoryMatch = report.reward && report.reward.trim() !== '';
+      } else if (rewardFilter === 'no') {
+        categoryMatch = !report.reward || report.reward.trim() === '';
+      }
+    }
+    
+    return textMatch && categoryMatch;
+  });
+  
+  displayAdminReports(filtered);
+}
+
+// Display reports
 function displayReports(reports) {
   const container = document.getElementById("reportsContainer");
   container.innerHTML = "";
@@ -72,25 +190,25 @@ function displayReports(reports) {
   });
 }
 
-// Show lost item form
+// Show Lost Item form
 function showLost() {
   hideAll();
   document.getElementById("lost").classList.remove("hidden");
 }
 
-// Show all reports
+// Show Reports
 function showReports() {
   hideAll();
   document.getElementById("reportsList").classList.remove("hidden");
   displayReports(JSON.parse(localStorage.getItem('reports') || '[]'));
 }
 
-// Hide reports view
+// Hide Reports
 function hideReports() {
   document.getElementById("reportsList").classList.add("hidden");
 }
 
-// Go back to main screen
+// Go back to dashboard (hide all forms)
 function goBack() {
   hideAll();
   // Clear form data when going back
@@ -119,18 +237,18 @@ function goBack() {
   });
 }
 
-// Hide all forms
+// Hide all form sections
 function hideAll() {
   document.querySelectorAll(".form-card").forEach(section => {
     section.classList.add("hidden");
   });
 }
 
-// Remember which campus is selected
+// Track selected sites
 let selectedFoundSite = '';
 let selectedLostSite = '';
 
-// Pick a campus location
+// Select site for location
 function selectSite(btn, type) {
   const site = btn.innerText;
   
@@ -163,21 +281,21 @@ function selectSite(btn, type) {
   }
 }
 
-// Remember which items are selected
+// Track selected items
 let selectedItems = [];
 let selectedFoundItems = [];
 
-// Pick a lost item type
+// Select Lost Item
 function selectItem(btn) {
   toggleSelection(btn, selectedItems, "description", "lostOthersInput");
 }
 
-// Pick a found item type
+// Select Found Item
 function selectFound(btn) {
   toggleSelection(btn, selectedFoundItems, "foundDescription", "foundOthersInput");
 }
 
-// Turn item selection on/off
+// Toggle item selection
 function toggleSelection(btn, arr, descId, othersInputId) {
   const item = btn.innerText;
   
@@ -258,7 +376,7 @@ function updateDescriptionField(arr, descId, othersInputId) {
   updateCharCounter(descId);
 }
 
-// Update description with selected items
+// Character counter functionality
 function updateCharCounter(fieldId) {
   const field = document.getElementById(fieldId);
   const counterId = fieldId + "Count";
@@ -268,14 +386,14 @@ function updateCharCounter(fieldId) {
   }
 }
 
-// Store report in browser
+// Save report to localStorage
 function saveReport(report) {
   const reports = JSON.parse(localStorage.getItem('reports') || '[]');
   reports.push(report);
   localStorage.setItem('reports', JSON.stringify(reports));
 }
 
-// Log user into system
+// Handle login
 function login() {
   const email = document.getElementById("email").value.trim();
   const password = document.getElementById("password").value.trim();
@@ -324,21 +442,21 @@ function login() {
   }
 }
 
-// Show create account screen
+// Show create account form
 function showCreateAccount() {
   document.getElementById("loginFormContainer").classList.add("hidden");
   document.getElementById("createAccountContainer").classList.remove("hidden");
   clearErrors();
 }
 
-// Show login screen
+// Show login form
 function showLogin() {
   document.getElementById("createAccountContainer").classList.add("hidden");
   document.getElementById("loginFormContainer").classList.remove("hidden");
   clearErrors();
 }
 
-// Make new user account
+// Create account
 function createAccount() {
   const name = document.getElementById("createName").value.trim();
   const email = document.getElementById("createEmail").value.trim();
@@ -386,7 +504,7 @@ function createAccount() {
   }
 }
 
-// Log user out
+// Logout function
 function logout() {
   localStorage.removeItem('currentUser');
   document.getElementById("dashboard").classList.add("hidden");
@@ -401,7 +519,7 @@ function logout() {
   alert('You have been logged out successfully!');
 }
 
-// Set up button clicks and interactions
+// Initialize event listeners
 document.addEventListener('DOMContentLoaded', function() {
   // Character counters for all inputs
   const inputs = [
@@ -423,6 +541,68 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     }
   });
+  
+  // Category filter event listeners
+  const categoryFilter = document.getElementById('categoryFilter');
+  const adminCategoryFilter = document.getElementById('adminCategoryFilter');
+  
+  if (categoryFilter) {
+    categoryFilter.addEventListener('change', function() {
+      const typeFilter = document.getElementById('typeFilter');
+      const siteFilter = document.getElementById('siteFilter');
+      const itemFilter = document.getElementById('itemFilter');
+      const rewardFilter = document.getElementById('rewardFilter');
+      
+      // Hide all sub-filters first
+      if (typeFilter) typeFilter.style.display = 'none';
+      if (siteFilter) siteFilter.style.display = 'none';
+      if (itemFilter) itemFilter.style.display = 'none';
+      if (rewardFilter) rewardFilter.style.display = 'none';
+      
+      // Show relevant sub-filter
+      if (this.value === 'type' && typeFilter) {
+        typeFilter.style.display = 'block';
+      } else if (this.value === 'site' && siteFilter) {
+        siteFilter.style.display = 'block';
+      } else if (this.value === 'item' && itemFilter) {
+        itemFilter.style.display = 'block';
+      } else if (this.value === 'reward' && rewardFilter) {
+        rewardFilter.style.display = 'block';
+      }
+      
+      // Trigger search
+      searchReports(document.getElementById('searchInput').value);
+    });
+  }
+  
+  if (adminCategoryFilter) {
+    adminCategoryFilter.addEventListener('change', function() {
+      const adminTypeFilter = document.getElementById('adminTypeFilter');
+      const adminSiteFilter = document.getElementById('adminSiteFilter');
+      const adminItemFilter = document.getElementById('adminItemFilter');
+      const adminRewardFilter = document.getElementById('adminRewardFilter');
+      
+      // Hide all sub-filters first
+      if (adminTypeFilter) adminTypeFilter.style.display = 'none';
+      if (adminSiteFilter) adminSiteFilter.style.display = 'none';
+      if (adminItemFilter) adminItemFilter.style.display = 'none';
+      if (adminRewardFilter) adminRewardFilter.style.display = 'none';
+      
+      // Show relevant sub-filter
+      if (this.value === 'type' && adminTypeFilter) {
+        adminTypeFilter.style.display = 'block';
+      } else if (this.value === 'site' && adminSiteFilter) {
+        adminSiteFilter.style.display = 'block';
+      } else if (this.value === 'item' && adminItemFilter) {
+        adminItemFilter.style.display = 'block';
+      } else if (this.value === 'reward' && adminRewardFilter) {
+        adminRewardFilter.style.display = 'block';
+      }
+      
+      // Trigger search
+      adminSearchReports(document.getElementById('adminSearchInput').value);
+    });
+  }
   
   // Form submissions
   document.getElementById('foundForm').addEventListener('submit', function(e) {
@@ -452,13 +632,13 @@ document.addEventListener('DOMContentLoaded', function() {
   showReports();
 });
 
-// Open help window
+// Toggle Help Modal
 function toggleHelpModal() {
   const modal = document.getElementById('helpModal');
   modal.classList.toggle('show');
 }
 
-// Switch between campus information
+// Switch Campus Information
 function switchCampus(campus) {
   // Hide all campus info
   document.querySelectorAll('.campus-info').forEach(info => {
@@ -477,7 +657,7 @@ function switchCampus(campus) {
   event.target.classList.add('active');
 }
 
-// Allow dragging help window
+// Make help modal draggable
 let isDragging = false;
 let currentX;
 let currentY;
@@ -538,7 +718,7 @@ helpHeader.addEventListener('touchstart', dragStart);
 document.addEventListener('touchmove', drag);
 document.addEventListener('touchend', dragEnd);
 
-// Open admin dashboard
+// Show Admin Panel
 function showAdminPanel() {
   // Check if current user is admin
   const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
@@ -552,13 +732,13 @@ function showAdminPanel() {
   showAllReports();
 }
 
-// Load all reports for admin
+// Show all reports for admin
 function showAllReports() {
   const reports = JSON.parse(localStorage.getItem('reports') || '[]');
   displayAdminReports(reports);
 }
 
-// Show reports with admin tools
+// Display admin reports with controls
 function displayAdminReports(reports) {
   const container = document.getElementById("adminReportsContainer");
   container.innerHTML = "";
@@ -600,8 +780,7 @@ function displayAdminReports(reports) {
     container.appendChild(div);
   });
 }
-
-// Show or hide user contact details
+// Toggle user information visibility
 function toggleUserInfo(index) {
   const reports = JSON.parse(localStorage.getItem('reports') || '[]');
   const report = reports[index];
@@ -636,7 +815,7 @@ function toggleUserInfo(index) {
   showReports();
 }
 
-// Edit report
+// Edit Report
 function editReport(index) {
   const reports = JSON.parse(localStorage.getItem('reports') || '[]');
   const report = reports[index];
@@ -650,7 +829,7 @@ function editReport(index) {
   }
 }
 
-// Delete report
+// Delete Report
 function deleteReport(index) {
   if (confirm('Are you sure you want to delete this report?')) {
     const reports = JSON.parse(localStorage.getItem('reports') || '[]');
@@ -661,7 +840,7 @@ function deleteReport(index) {
   }
 }
 
-// Admin search through reports
+// Admin Search Function
 function adminSearchReports(query) {
   const reports = JSON.parse(localStorage.getItem('reports') || '[]');
   const filtered = reports.filter(report => {
@@ -675,7 +854,7 @@ function adminSearchReports(query) {
   displayAdminReports(filtered);
 }
 
-// Export reports
+// Export Reports
 function exportReports() {
   const reports = JSON.parse(localStorage.getItem('reports') || '[]');
   const dataStr = JSON.stringify(reports, null, 2);
@@ -695,7 +874,7 @@ function showFound() {
   document.getElementById("found").classList.remove("hidden");
 }
 
-// Submit found report
+// Submit Found Report
 function submitFoundReport() {
   clearErrors();
   
@@ -721,7 +900,7 @@ function submitFoundReport() {
   
   if (!isValid) return;
   
-  // Handle image upload
+  // Image upload
   let imageData = null;
   if (fileInput.files && fileInput.files[0]) {
     const reader = new FileReader();
@@ -742,7 +921,6 @@ function saveFoundReportWithData(imageData) {
   const location = document.getElementById('foundLocation').value.trim();
   const description = document.getElementById('foundDescription').value.trim();
   
-  // Get the actual item name based on selection
   let itemName = '';
   if (selectedFoundItems.includes('Others')) {
     const othersValue = document.getElementById('foundOthersSpecify').value.trim();
@@ -765,7 +943,7 @@ function saveFoundReportWithData(imageData) {
     phone: phone,
     site: selectedFoundSite,
     location: location,
-    items: itemName, // Prioritize category/item name
+    items: itemName,
     description: description,
     imageData: imageData,
     timestamp: new Date().toISOString()
@@ -775,7 +953,7 @@ function saveFoundReportWithData(imageData) {
   alert('Found report submitted successfully! Location: ' + selectedFoundSite + ' - ' + location);
   goBack();
   showReports(); // Redirect to search inventory
-  localStorage.setItem('reports', JSON.stringify(reports)); // Add this line
+  localStorage.setItem('reports', JSON.stringify(reports));
 }
 
 // Submit lost report
